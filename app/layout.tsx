@@ -3,7 +3,7 @@ import { Tajawal, Inter } from 'next/font/google';
 import './globals.css';
 
 const tajawal = Tajawal({
-  subsets: ['arabic'],
+  subsets: ['arabic', 'latin'],
   weight: ['400', '500', '700', '800', '900'],
   variable: '--font-tajawal',
 });
@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className={`${tajawal.variable} ${inter.variable}`} suppressHydrationWarning>
-      <body className="font-sans antialiased bg-[#f8fafc]" suppressHydrationWarning>
+      <body className="font-sans antialiased bg-[#0a0a0a] text-slate-100 transition-colors duration-300" suppressHydrationWarning>
         {children}
       </body>
     </html>
