@@ -5,8 +5,9 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { 
   Search, ShoppingCart, Plus, Minus, Home, 
-  Heart, ArrowLeft, Zap, X, Send, Globe, LayoutGrid, MessageCircle, Database, CheckCircle2, Sun, Moon, Sparkles, Clock, Key, LogOut, User
+  Heart, ArrowLeft, Zap, X, Send, Globe, LayoutGrid, MessageCircle, Database, CheckCircle2, Sun, Moon, Sparkles, Clock, Key, LogOut, User, SearchCheck
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface Product {
   id: string;
@@ -39,8 +40,6 @@ interface OrderRecord {
   client_name?: string;
   status: string;
 }
-
-const WAREHOUSE_PHONE = '212762487466';
 
 const dict = {
   ar: {
@@ -78,6 +77,7 @@ const dict = {
     invalidKey: 'مفتاح الدخول غير صحيح، يرجى التواصل مع الإدارة',
     welcomeBack: 'مرحباً بك،',
     logout: 'خروج',
+    trackOrder: 'تتبع الطلب',
   },
   en: {
     appName: 'Warehouse Express',
@@ -114,6 +114,7 @@ const dict = {
     invalidKey: 'Invalid access key. Contact support.',
     welcomeBack: 'Welcome,',
     logout: 'Logout',
+    trackOrder: 'Track Order',
   },
 };
 
@@ -122,7 +123,10 @@ export default function CatalogPage() {
   const [isDark, setIsDark] = useState<boolean>(true);
   const [products, setProducts] = useState<Product[]>([]);
   
-  // SWITCHED TO sessionStorage: Clears automatically when tab/browser closes!
+  // Dynamic WhatsApp Phone Number fetched from store_settings
+  const [whatsappPhone, setWhatsappPhone] = useState<string>('212762487466');
+
+  // Clears automatically when tab/browser closes
   const [client, setClient] = useState<ClientSession | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -175,6 +179,22 @@ export default function CatalogPage() {
   const [orderSuccess, setOrderSuccess] = useState<boolean>(false);
 
   const t = dict[lang];
+
+  // Fetch WhatsApp Phone Number from store_settings database table
+  useEffect(() => {
+    async function fetchStoreSettings() {
+      const { data } = await supabase
+        .from('store_settings')
+        .select('key_value')
+        .eq('key_name', 'whatsapp_phone')
+        .single();
+
+      if (data?.key_value) {
+        setWhatsappPhone(data.key_value.trim().replace(/[^0-9]/g, ''));
+      }
+    }
+    fetchStoreSettings();
+  }, []);
 
   useEffect(() => {
     try {
@@ -395,7 +415,8 @@ export default function CatalogPage() {
     setIsCartOpen(false);
     fetchClientOrders();
 
-    const whatsappUrl = `https://wa.me/${WAREHOUSE_PHONE}?text=${encodeURIComponent(msg)}`;
+    // 🎯 Uses dynamic whatsappPhone state fetched from database
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -496,7 +517,20 @@ export default function CatalogPage() {
           </div>
 
           {/* Action Control Pills */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            
+            {/* TRACK ORDER LINK BUTTON */}
+            <Link href="/status">
+              <motion.button 
+                whileTap={{ scale: 0.92 }} 
+                className={`flex items-center gap-2 px-3.5 h-10 rounded-2xl border transition-all text-xs font-bold shadow-sm ${isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'}`}
+                title={t.trackOrder}
+              >
+                <SearchCheck className="w-4 h-4 text-emerald-400" />
+                <span className="hidden sm:inline">{t.trackOrder}</span>
+              </motion.button>
+            </Link>
+
             <motion.button 
               whileTap={{ scale: 0.92 }} 
               onClick={() => setIsDark(!isDark)} 
@@ -808,7 +842,13 @@ export default function CatalogPage() {
         </div>
       </main>
 
-      <a href={`https://wa.me/${WAREHOUSE_PHONE}?text=${encodeURIComponent(lang === 'ar' ? 'مرحباً ويرهاوس، أحتاج إلى مساعدة بخصوص منتجاتكم.' : 'Hello Warehouse, I need some assistance with your catalog.')}`} target="_blank" rel="noopener noreferrer" className="fixed bottom-24 right-5 md:bottom-6 md:right-6 z-40 bg-emerald-500 text-white p-4 rounded-full shadow-[0_8px_30px_rgba(16,185,129,0.4)] hover:bg-emerald-600 hover:scale-105 transition-all flex items-center justify-center">
+      {/* Floating Support Button with Dynamic Phone Link */}
+      <a 
+        href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(lang === 'ar' ? 'مرحباً ويرهاوس، أحتاج إلى مساعدة بخصوص منتجاتكم.' : 'Hello Warehouse, I need some assistance with your catalog.')}`} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="fixed bottom-24 right-5 md:bottom-6 md:right-6 z-40 bg-emerald-500 text-white p-4 rounded-full shadow-[0_8px_30px_rgba(16,185,129,0.4)] hover:bg-emerald-600 hover:scale-105 transition-all flex items-center justify-center"
+      >
         <MessageCircle className="w-6 h-6" />
       </a>
 
@@ -841,6 +881,13 @@ export default function CatalogPage() {
             <LayoutGrid className="w-5 h-5" />
           </button>
         </div>
+
+        {/* TRACK ORDER MOBILE NAV BUTTON */}
+        <Link href="/status">
+          <button className="p-3.5 rounded-full text-slate-400 hover:text-emerald-400 transition-colors">
+            <SearchCheck className="w-5 h-5" />
+          </button>
+        </Link>
 
         <div className={`w-px h-6 mx-1 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
 

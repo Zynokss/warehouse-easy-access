@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, CheckCircle2, Clock, AlertTriangle, 
   ArrowLeft, Search, RefreshCw, PackageCheck, XCircle, TrendingUp,
-  MessageCircle, Printer, Sun, Moon, Globe, Check, Eye
+  MessageCircle, Printer, Sun, Moon, Globe, Check, Eye, Download
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -40,6 +40,7 @@ const dict = {
     title: 'مركز إدارة الطلبات',
     subtitle: 'متابعة وتنفيذ طلبات العملاء المباشرة',
     refresh: 'تحديث Feed',
+    exportCSV: 'تصدير CSV',
     pendingRequisitions: 'طلبات قيد الانتظار',
     fulfilledOrders: 'طلبات تم تنفيذها',
     totalRevenue: 'إجمالي المبيعات المنفذة',
@@ -67,6 +68,7 @@ const dict = {
     title: 'Orders Command Center',
     subtitle: 'Live client requisition dispatch & fulfillment',
     refresh: 'Refresh Feed',
+    exportCSV: 'Export CSV',
     pendingRequisitions: 'Pending Requisitions',
     fulfilledOrders: 'Fulfilled Orders',
     totalRevenue: 'Total Revenue (Fulfilled)',
@@ -143,6 +145,30 @@ export default function OwnerOrdersPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const exportOrdersToCSV = () => {
+    if (orders.length === 0) return;
+
+    const headers = ["Order ID", "Client Name", "Status", "Total Amount (MAD)", "Created At"];
+    const rows = orders.map(o => [
+      o.id,
+      `"${o.client_name || 'Anonymous'}"`,
+      o.status,
+      o.total_amount,
+      `"${new Date(o.created_at).toLocaleString()}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `warehouse_orders_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const updateOrderStatus = async (id: string, newStatus: 'pending' | 'fulfilled' | 'cancelled') => {
@@ -269,6 +295,14 @@ export default function OwnerOrdersPage() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <button 
+              onClick={exportOrdersToCSV}
+              className="px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">{t.exportCSV}</span>
+            </button>
+
             <button 
               onClick={() => setIsDark(!isDark)} 
               className={`p-2.5 rounded-2xl border transition-all ${isDark ? 'bg-slate-900 border-slate-800 text-amber-400' : 'bg-white border-slate-200 text-slate-700'}`}
